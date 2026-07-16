@@ -19,3 +19,4 @@ Pasta com tudo que o time precisa para iniciar o desenvolvimento do produto no C
 
 ## Decisão de stack (resumo executivo)
 PostgreSQL confirmado (banco e fila via Procrastinate — sem Redis por ora). Django 6 + DRF no backend; front do produto em Django/HTMX (não Streamlit — este fica para análises internas). Justificativas e alternativas na SPEC Técnica §1.
+# ManAuto
