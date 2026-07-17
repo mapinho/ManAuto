@@ -1,10 +1,10 @@
 # CLAUDE.md — Repositório AgroVector Manutenção
 
-Contexto: produto SaaS de planejamento de manutenção para agronegócio da Vector Consulting.
+Contexto: produto SaaS de planejamento de manutenção para agronegócio da Vector Consulting. Este contexto e os documentos aqui citados foram gerados pelo Claude Desktop para o desenvolvimento da app `agrovector_manutencao_v4.2_2026-06-16.html` que foi criado pelo prompt `PROMPT_Planejamento_Manutencao_Excel.md`.
 Documentos normativos: `SPEC_Funcional.md` (regras de negócio e motor) e `SPEC_Tecnica_Ambiente.md` (arquitetura e stack). Em conflito, as SPECs vencem.
 
 ## Stack (não mudar sem ADR)
-Python 3.12 · Django 5 + DRF · PostgreSQL 16 · Procrastinate (fila em Postgres) · HTMX + Alpine + ECharts · uv · pytest · ruff · Docker Compose.
+Python 3.14 · Django 6 + DRF · PostgreSQL 16 · Procrastinate (fila em Postgres) · HTMX + Alpine + ECharts · uv · pytest · ruff · Docker Compose.
 
 ## Regras de arquitetura
 - `apps/motor/` é **Python puro** (sem imports de Django/ORM). Toda regra de cálculo vive lá, com tipos explícitos. Views/serviços chamam o motor, nunca reimplementam fórmulas.

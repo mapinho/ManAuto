@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# uv
+.uv-cache/
+
+# Django
+staticfiles/
+media/
+*.sqlite3
+local_settings.py
+
+# Ambiente
+.env
+.claude/settings.local.json
+
+# Testes / cobertura
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

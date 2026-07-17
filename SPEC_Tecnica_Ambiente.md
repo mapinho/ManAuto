@@ -8,10 +8,17 @@ Versão 1.0 · 07/07/2026
 |---|---|---|
 | PostgreSQL (banco) | ✅ Correta. Relacional, JSONB para premissas versionadas, window functions para os planos. | **PostgreSQL 16** — decisão fechada. |
 | PostgreSQL (mensageria) | ✅ Viável e recomendado NESTA escala. Evita Redis/RabbitMQ como infraestrutura extra. | **Procrastinate** (fila de tarefas Python nativa em Postgres, usa LISTEN/NOTIFY). Se o volume crescer muito (>50 jobs/s), migrar para Celery+Redis — a interface de tasks fica isolada para permitir troca. |
-| Python/Django | ✅ Correta. Admin pronto (CRUDs de cadastro), ORM, auth/permissões, ecossistema maduro — ideal para time enxuto guiado por Claude Code. | **Django 5 + Django REST Framework** (API para futuros clientes mobile/integrações). |
+| Python/Django | ✅ Correta. Admin pronto (CRUDs de cadastro), ORM, auth/permissões, ecossistema maduro — ideal para time enxuto guiado por Claude Code. | **Django 6 + Django REST Framework** (API para futuros clientes mobile/integrações). |
 | Streamlit | ⚠️ Ótimo para protótipos e análises internas; NÃO recomendado como front do produto multiusuário (auth/permissões limitadas, estado por sessão, difícil UX de agenda/grades 384×52). | Front do produto: **Django templates + HTMX + Alpine.js** (server-driven, simples de manter) com **ECharts** para gráficos. Streamlit fica como **ferramenta interna de análise/calibração** (ler OS, gerar sazonalidade) — opcional. |
 
 Resumo da decisão: **monolito Django + PostgreSQL + Procrastinate**, front HTMX, API DRF. Zero microsserviço — simplicidade operacional primeiro, o gargalo do negócio é validação de premissas, não escala.
+
+### ADR-0001 — Bump Python 3.12→3.14 e Django 5→6
+
+**Status:** aceito, 16/07/2026.
+**Contexto:** a decisão original (v1.0) fixou Python 3.12 + Django 5. Antes do scaffold do repositório (§6 passo 1), Django 6 e Python 3.14 já eram as versões estáveis correntes, e o ambiente local de desenvolvimento já usa Python 3.14.
+**Decisão:** adotar Python 3.14 + Django 6 como stack corrente. Sem mudança de arquitetura (§2) ou modelo de dados (§3) — apenas bump de versão.
+**Consequências:** `pyproject.toml`, `Dockerfile`, `.python-version` e o workflow de CI passam a fixar 3.14/Django 6. Revisitar dependências de terceiros (`procrastinate`, `django-simple-history`, `django-htmx`) quanto à compatibilidade com Django 6 no passo 2.
 
 ## 2. Arquitetura
 
@@ -66,7 +73,7 @@ Auditoria: `django-simple-history` nas premissas e cadastros.
 
 ## 4. Ambiente de desenvolvimento
 
-- **Python 3.12 + uv** (gestão de deps e venv) · lint/format **ruff** · testes **pytest + pytest-django** · **pre-commit**.
+- **Python 3.14 + uv** (gestão de deps e venv) · lint/format **ruff** · testes **pytest + pytest-django** · **pre-commit**.
 - **Docker Compose**: serviços `web` (Django), `worker` (Procrastinate), `db` (postgres:16). Um comando: `docker compose up`.
 - **Makefile**: `make dev / test / lint / seed-petribu / plano`.
 - Seeds: `manage.py seed_demo` (dados do protótipo) e `manage.py seed_petribu` (384 ativos + premissas calibradas) — base dos testes de regressão.

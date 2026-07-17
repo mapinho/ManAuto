@@ -7,7 +7,13 @@ Fonte da verdade: protótipo `agrovector_manutencao_v4.2_2026-06-16.html` + inst
 
 Plataforma SaaS de **planejamento integrado de manutenção para o agronegócio** (garagens de usina): dimensiona HH, headcount, insumos e custo a partir de premissas, frota, pessoas e checklists, aproveitando janelas agronômicas (safra/entressafra). Diferencial: motor de cálculo que converte gatilhos de preventiva em cronograma anual de 52 semanas, plano de corretivas calibrado por histórico e saving financeiro (EBITDA).
 
-Usuários: consultor Vector (implantação e cenários), gerente de manutenção do cliente (gestão do plano), PCM/programador (agenda semanal), diretoria (dashboards executivos).
+Usuários: consultor Vector (implantação e cenários), gerente de manutenção do cliente (gestão do plano), PCM/programador (agenda semanal), diretoria (dashboards executivos). Gestão dos usuários somente
+pelos admin e consultores Vector.
+
+Autenticação (allauth): login por email, senha padrão Django ou autenticação por
+rede social Google/Microsoft ou SSO.
+
+Autorização (allauth): uma vez autenticado, a autorização se dá conforme o papel do usuário autenticado. Usuários não cadastrados não são autorizado.
 
 ## 2. Módulos (paridade com o protótipo v4.2 — 13 telas)
 
