@@ -59,7 +59,9 @@ Tipo do evento em `cu = n×itv`: percorre os gatilhos em ordem crescente; o ÚLT
 `saving_R$[m] = (baseline[m] − HHcorr[m]) × custoHH_médio_oficina`
 
 ### 3.6 Fixtures de regressão (dados Petribú 06/07/2026 — testes automatizados DEVEM reproduzir)
-384 ativos → **2.101–2.102 preventivas/ano** (S 1.140 · A 641 · B 312 · C 8), **7.984 HH prev/ano** (±0,1%), **22.761 HH corr/ano** (±0,1%), pico dez–mar = 1.025–1.026 eventos, janelas: mai=20, set=16. Sazonalidade Petribú: [1.24,1.20,1.09,0.69,0.50,0.36,0.46,1.06,1.25,1.42,1.40,1.33].
+384 ativos → **2.101–2.102 preventivas/ano**, **7.984 HH prev/ano** (±0,1%), **22.761 HH corr/ano** (±0,1%), pico dez–mar = 1.025–1.026 eventos. Sazonalidade Petribú: [1.24,1.20,1.09,0.69,0.50,0.36,0.46,1.06,1.25,1.42,1.40,1.33]. Estas são as tolerâncias normativas (únicas exigidas em CI).
+
+Números complementares, verificados executando `referencias/agrovector_manutencao_Petribu_v1.0_2026-07-06.html` em Node.js sobre os dados reais do arquivo (2026-07-16): S 1.140 · A 642 · B 312 · C 8 · D 0 (total 2.102); janelas mai=20, set=19 (contadas pela data real do evento na Agenda, que pode cair no mês seguinte ao da semana de disparo). Ver `apps/motor/tests/test_fixture_petribu.py`.
 
 ## 4. Requisitos além do protótipo (produção)
 

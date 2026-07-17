@@ -30,14 +30,25 @@ Implementação em `apps/motor/` — Python puro, sem Django. Fonte original: fu
 
 ## Fixtures de regressão (obrigatórios em CI)
 
-**Dataset demo** (protótipo, 13 ativos): validar contra o app v4.2.
+**Dataset demo** (protótipo, 13 ativos): validar contra o app v4.2. Fixture
+implementado em `apps/motor/tests/test_fixture_demo.py`.
+
 **Dataset Petribú** (`make seed-petribu`, 384 ativos, premissas 06/07/2026):
-- preventivas/ano = 2.101 ± 1 (S 1.140 · A 641 · B 312 · C 8)
+tolerâncias abaixo são as normativas (únicas exigidas em CI):
+- preventivas/ano = 2.101 ± 1
 - HH preventiva/ano = 7.984 ± 0,1%
 - HH corretiva/ano = 22.761 ± 0,1%
-- eventos dez–mar = 1.025–1.026 · mai = 20 · set = 16
+- eventos dez–mar = 1.025–1.026
 - sazonal = [1.24,1.20,1.09,0.69,0.50,0.36,0.46,1.06,1.25,1.42,1.40,1.33]
 - 1ª preventiva: colhedoras Rev. S na semana 3 (set/2026)
+
+Números complementares verificados executando `referencias/agrovector_manutencao_Petribu_v1.0_2026-07-06.html`
+em Node.js sobre os dados reais do arquivo (2026-07-16): S 1.140 · A 642 ·
+B 312 · C 8 · D 0 (total 2.102); mai = 20 · set = 19 — ligeiramente
+diferentes dos citados antes desta verificação (A 641, set 16), por conta
+do método de contagem (data real do evento na Agenda, que pode cair no mês
+seguinte ao da semana de disparo, em vez do mês da semana). Fixture
+implementado em `apps/motor/tests/test_fixture_petribu.py`.
 
 ## Procedimento para alterar o motor
 1. Confirmar aprovação do Fabio e atualizar `SPEC_Funcional.md §3`.
