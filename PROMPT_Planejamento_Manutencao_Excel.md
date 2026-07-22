@@ -10,15 +10,15 @@ Você está dando continuidade ao **Planejamento Integrado de Manutenção AgroV
 
 ### Ecossistema de arquivos (pasta "APP Manutenção")
 
-1. **`Templates/Planejamento_Manutencao_AgroVector_v4.2.xlsx`** — RÉPLICA FUNCIONAL do app em Excel (22.602 fórmulas, zero erros). É a peça central de trabalho com o cliente:
+1. **`Templates_Vector/Planejamento_Manutencao_AgroVector_v4.2.xlsx`** — RÉPLICA FUNCIONAL do app em Excel (22.602 fórmulas, zero erros). É a peça central de trabalho com o cliente:
    - **Abas de entrada:** Premissas (índices prev/corr, deflator, terceiros, disponibilidade de MO, dias úteis, safra, sazonalidade, gatilhos S/A/B por classe) · Frota (30 slots) · Pessoas (40 slots, com custo mensal e custo/hora calculados) · Checklist (100 slots).
    - **Abas de resultado (só fórmulas):** Cronograma (ativo × 52 semanas, semáforo S/A/B) · Plan_Prev e Plan_Corr (HH por oficina × mês) · Disponibilidade (disp vs. necessária, saldo com semáforo) · Recursos (HC necessário vs. atual) · Insumos (demanda anual com herança) · Saving (baseline deflator=0 vs. plano, em R$) · Resumo (KPIs).
    - **Abas auxiliares (não mexer):** Semanas, Cron_Uso, Eventos (1 linha por ativo×semana), Aux_HH (HH cumulativa por classe×tipo×oficina).
    - **Motor idêntico ao app:** uso acumulado semanal dispara preventiva ao cruzar múltiplo do intervalo; tipo pelo maior gatilho divisível; herança cumulativa (B executa S+A+B); horas líquidas = (brutas − almoço − café − aberturaOS) × (1 − (abs% + férias%/12 + trein/(252×efetivas))) × produtividade%; corretiva = preventiva × (corr/prev) × deflator progressivo (1 − defl%×(m/11+0,5)×0,5) × sazonalidade mensal; saving = (HH corretiva baseline − com plano) × custo médio/HH da oficina.
    - **Simplificações documentadas:** máx. 1 preventiva por ativo/semana; tipos S/A/B (C/D podem ser adicionados); dados atuais = demo do app.
 2. **`agrovector_manutencao_v4.2_2026-06-16.html`** — o app (single-file, 13 abas, estado em localStorage `av_f2demo`, importadores CSV). Ver PROMPT_Desenvolvimento_App_AgroVector_v4.2.md para detalhes da arquitetura.
-3. **`Templates/Parametrizacao_AgroVector_v4.2.xlsx`** — ponte para a carga: abas Frota/Pessoas/Checklist no formato exato dos importadores CSV do app.
-4. **`Templates/Diagnostico_AgroVector_Manutencao_F1F2_CoresFabio.xlsx`** — diagnóstico de maturidade aplicado antes da implantação.
+3. **`Templates_Vector/Parametrizacao_AgroVector_v4.2.xlsx`** — ponte para a carga: abas Frota/Pessoas/Checklist no formato exato dos importadores CSV do app.
+4. **`Templates_Vector/Diagnostico_AgroVector_Manutencao_F1F2_CoresFabio.xlsx`** — diagnóstico de maturidade aplicado antes da implantação.
 5. **`CLAUDE.md`** — padrões obrigatórios (lido automaticamente).
 
 ### Fluxo de trabalho com o cliente

@@ -17,6 +17,8 @@ local_settings.py
 # Ambiente
 .env
 .claude/settings.local.json
+.claude/settings.json
+.claude/scheduled_tasks.lock
 
 # Testes / cobertura
 .pytest_cache/

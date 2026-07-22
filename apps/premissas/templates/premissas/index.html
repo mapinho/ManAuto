@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% load l10n %}
+{% block title %}Premissas · {{ org.nome }} · AgroVector{% endblock %}
+{% block content %}
+{% comment %}
+Campos EDITAVEIS (input value=...) usam |unlocalize: HTML5 <input type="number">
+exige ponto decimal (spec), mas LANGUAGE_CODE="pt-br" faz Django renderizar
+"10,0" com virgula — o navegador rejeita silenciosamente esse valor ao
+recarregar a pagina (o campo aparece vazio). Celulas so-leitura (Horas
+Efetivas/Liquidas) continuam localizadas — ali o formato brasileiro e
+desejado (skill vector-relatorios).
+{% endcomment %}
+<div class="stitle">Premissas do Plano de Manutenção</div>
+<div class="sdesc">Ponto de partida de todos os cálculos. Cada campo salva sozinho ao mudar (sem botão "salvar").</div>
+
+<div class="block">
+  <div class="blk-t">1 · Índices de Manutenção — por Oficina</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th style="min-width:250px">Premissa</th><th>U/M</th>
+      {% for of in oficinas %}<th class="of-hdr">{{ of.nome }}</th>{% endfor %}
+    </tr></thead>
+    <tbody>
+      {% for linha in linhas_indices %}
+      <tr>
+        <td class="lbl">{{ linha.label }}</td><td class="um">{{ linha.unidade }}</td>
+        {% for of, valor in linha.valores %}
+        <td>
+          <input type="number" step="{{ linha.passo }}" min="0" value="{{ valor|unlocalize }}" name="valor" class="saved"
+                 hx-post="{% url 'premissas:atualizar_indices' org_slug=org.slug oficina_id=of.pk %}"
+                 hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+                 hx-vals='{"campo": "{{ linha.campo }}"}'>
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  {% if not oficinas %}<div class="ibox">Nenhuma oficina cadastrada. Cadastre pelo admin antes de editar premissas.</div>{% endif %}
+</div>
+
+<div class="block">
+  <div class="blk-t">2 · Disponibilidade de Mão de Obra — por Oficina</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th style="min-width:250px">Premissa</th><th>U/M</th>
+      {% for of in oficinas %}<th class="of-hdr">{{ of.nome }}</th>{% endfor %}
+    </tr></thead>
+    <tbody>
+      {% for linha in linhas_disp %}
+      <tr>
+        <td class="lbl">{{ linha.label }}</td><td class="um">{{ linha.unidade }}</td>
+        {% for of, valor in linha.valores %}
+        <td>
+          <input type="number" step="{{ linha.passo }}" min="0" value="{{ valor|unlocalize }}" name="valor" class="saved"
+                 hx-post="{% url 'premissas:atualizar_disp' org_slug=org.slug oficina_id=of.pk %}"
+                 hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+                 hx-vals='{"campo": "{{ linha.campo }}"}'>
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      <tr class="tr-c">
+        <td class="lbl" style="color:#22c55e;font-weight:700">HORAS EFETIVAS / DIA</td><td class="um">HH</td>
+        {% for of in oficinas %}<td class="cv">{{ of.horas_liquidas.efetivas }}</td>{% endfor %}
+      </tr>
+      <tr class="tr-c">
+        <td class="lbl" style="color:#22c55e;font-weight:700">HORAS LÍQUIDAS / DIA</td><td class="um">HH</td>
+        {% for of in oficinas %}<td class="cv">{{ of.horas_liquidas.liquidas }}</td>{% endfor %}
+      </tr>
+      <tr class="tr-c">
+        <td class="lbl" style="color:#22c55e;font-weight:700">HORAS LÍQUIDAS / MÊS MÉDIO</td><td class="um">HH</td>
+        {% for of in oficinas %}<td class="cv">{{ of.horas_liquidas_mes }}</td>{% endfor %}
+      </tr>
+    </tbody>
+  </table></div>
+</div>
+
+<div class="block">
+  <div class="blk-t">3 · Calendário — Dias Úteis e Sazonalidade de Corretivas</div>
+  <div class="ibox">Fator sazonalidade: <b>1.0</b> = normal · <b class="ca">&gt;1.0 = pico (safra)</b> · abaixo de 1.0 = entressafra</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="min-width:200px">Parâmetro</th>{% for i, mes in meses %}<th class="mh">{{ mes }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for linha in linhas_calendario_mensal %}
+      <tr>
+        <td class="lbl">{{ linha.label }}</td>
+        {% for i, valor in linha.valores %}
+        <td>
+          <input type="number" step="{{ linha.passo }}" min="0" value="{{ valor|unlocalize }}" name="valor" class="saved"
+                 hx-post="{% url 'premissas:atualizar_calendario_mes' org_slug=org.slug %}"
+                 hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+                 hx-vals='{"campo": "{{ linha.campo }}", "indice": {{ i }}}'>
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      <tr>
+        <td class="lbl">Período de safra</td>
+        {% for i, safra in safra_mensal %}
+        <td class="cC">
+          {% include "premissas/_botao_safra.html" with post_url=safra_url indice=i safra=safra %}
+        </td>
+        {% endfor %}
+      </tr>
+    </tbody>
+  </table></div>
+</div>
+
+<div class="block">
+  <div class="blk-t">4 · Gatilhos e Intervalos de Preventiva — por Classe de Ativo</div>
+  <div class="ibox">Define quando cada equipamento entra para preventiva. Tipos: <b>S</b> = simples · <b>A</b> = intermediária · <b>B</b> = completa · <b>C/D</b> = grande porte. Deixe em branco os tipos não usados.</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Classe de Ativo</th><th>Unidade</th>
+      {% for tipo in tipos_preventiva %}<th class="cC">{{ tipo.label }} ({{ tipo.value }})</th>{% endfor %}
+    </tr></thead>
+    <tbody>
+      {% for classe in classes %}
+      <tr>
+        <td class="lbl">{{ classe.nome }}</td>
+        <td>
+          <select hx-post="{% url 'premissas:atualizar_classe_unidade' org_slug=org.slug classe_id=classe.pk %}"
+                  hx-trigger="change" hx-swap="none" name="unidade">
+            {% for u in unidades %}<option value="{{ u.value }}" {% if classe.unidade == u.value %}selected{% endif %}>{{ u.label }}</option>{% endfor %}
+          </select>
+        </td>
+        {% for tipo, gat in classe.gatilho_por_tipo %}
+        <td>
+          <input type="number" step="50" min="0" value="{% if gat %}{{ gat.intervalo|unlocalize }}{% endif %}" name="intervalo" class="saved"
+                 hx-post="{% url 'premissas:atualizar_gatilho' org_slug=org.slug classe_id=classe.pk %}"
+                 hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+                 hx-vals='{"tipo": "{{ tipo.value }}"}'>
+        </td>
+        {% endfor %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="mut">Nenhuma classe de ativo cadastrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<div class="block">
+  <div class="blk-t">5 · Calendário Agrícola — Safra e Entressafra</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Parâmetro</th><th>Data</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="lbl">Data de início da safra</td>
+        <td>
+          <input type="date" value="{{ calendario.inicio_safra }}" name="inicio_safra"
+                 hx-post="{% url 'premissas:atualizar_datas_safra' org_slug=org.slug %}"
+                 hx-trigger="change" hx-target="next .save-fb" hx-swap="innerHTML"
+                 hx-include="[name='fim_safra']">
+        </td>
+        <td class="mut">Determina qual semana é a semana 1 do calendário agrícola <span class="save-fb"></span></td>
+      </tr>
+      <tr>
+        <td class="lbl">Data de fim da safra</td>
+        <td>
+          <input type="date" value="{{ calendario.fim_safra }}" name="fim_safra"
+                 hx-post="{% url 'premissas:atualizar_datas_safra' org_slug=org.slug %}"
+                 hx-trigger="change" hx-target="next .save-fb" hx-swap="innerHTML"
+                 hx-include="[name='inicio_safra']">
+        </td>
+        <td class="mut">Semanas fora deste período = entressafra (uso médio menor) <span class="save-fb"></span></td>
+      </tr>
+    </tbody>
+  </table></div>
+</div>
+
+<div class="block">
+  <div class="blk-t">6 · Herança de Tipos de Preventiva (Cumulativo)</div>
+  <div class="ibox">Quando o Cronograma aciona uma revisão do tipo <b>B</b>, o mecânico executa fisicamente os checklists S + A + B. HH, insumos e peças são somados automaticamente.</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Tipo acionado</th><th>Checklists executados</th></tr></thead>
+    <tbody>
+      {% for tipo, itens in heranca.items %}
+      <tr>
+        <td><span class="bdg bo">{{ tipo }}</span></td>
+        <td class="cm">{{ itens|join:" + " }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

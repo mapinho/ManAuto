@@ -1,0 +1,13 @@
+# Dependencias de desenvolvimento (testes/lint) — ver requirements.txt para
+# as dependencias de runtime. Gerado a partir de pyproject.toml
+# [dependency-groups.dev].
+-r requirements.txt
+
+# pytest travado em <9.0: pytest-django 4.12 quebra com pytest 9.x em testes
+# com @pytest.mark.django_db ("assert not self._finalizers" no teardown de
+# fixture) — revisitar quando pytest-django lançar suporte oficial.
+pytest>=8.0,<9.0
+pytest-django>=4.8
+pytest-cov>=5.0
+ruff>=0.6
+pre-commit>=3.7

@@ -6,6 +6,14 @@ DEBUG = False
 
 ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h]
 
+# Manifesto/hash de arquivos estaticos (whitenoise) — exige `collectstatic`
+# no build/deploy; so faz sentido aqui, nao em dev/test (SS4 base.py).
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 # LGPD / seguranca (SPEC Tecnica Ambiente SS5): senhas com Argon2.
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",

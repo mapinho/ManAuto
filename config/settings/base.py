@@ -8,7 +8,15 @@ deste modulo.
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Carrega .env automaticamente (dev local sem Docker — docker-compose.yml
+# ja injeta as variaveis via `env_file`, e plataformas de deploy setam as
+# variaveis de ambiente diretamente). `load_dotenv` nunca sobrescreve uma
+# variavel de ambiente ja definida, entao e seguro chamar sempre.
+load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 
@@ -99,9 +107,12 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
+# Storage com manifesto/hash (whitenoise) exige `collectstatic` previo — so faz
+# sentido em producao (config/settings/prod.py), onde o deploy roda collectstatic.
+# Em dev/test usamos o storage padrao do Django (serve direto de STATICFILES_DIRS).
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 

@@ -11,4 +11,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("healthz", healthz, name="healthz"),
     path("api/v1/", include("config.api_urls")),
+    path("", include("apps.core.urls")),
+    path("<slug:org_slug>/premissas/", include("apps.premissas.urls")),
 ]

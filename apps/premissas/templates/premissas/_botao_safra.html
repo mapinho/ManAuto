@@ -1,0 +1,8 @@
+<button
+  type="button"
+  class="bdg {% if safra %}bg{% else %}br{% endif %}"
+  hx-post="{{ post_url }}"
+  hx-vals='{"indice": {{ indice }}}'
+  hx-target="this"
+  hx-swap="outerHTML"
+>{% if safra %}SAFRA{% else %}—{% endif %}</button>

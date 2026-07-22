@@ -57,7 +57,7 @@ def normalizar_mojibake(texto: str | None) -> str | None:
         return texto
     try:
         corrigido = texto.encode("cp1252").decode("utf-8")
-    except (UnicodeDecodeError, UnicodeEncodeError):
+    except UnicodeDecodeError, UnicodeEncodeError:
         return texto
     return corrigido
 

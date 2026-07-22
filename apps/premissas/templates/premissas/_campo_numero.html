@@ -1,0 +1,13 @@
+{% load l10n %}<input
+  type="number"
+  step="{{ step }}"
+  min="0"
+  value="{{ valor|unlocalize }}"
+  name="valor"
+  class="saved"
+  hx-post="{{ post_url }}"
+  hx-trigger="change"
+  hx-target="this"
+  hx-swap="outerHTML"
+  {% if hx_vals %}hx-vals='{{ hx_vals }}'{% endif %}
+>

@@ -19,10 +19,10 @@ Regras:
 
 ## Formatos de importação (templates Vector — ordem de colunas é contrato)
 Existem DOIS formatos no repo, não confundir:
-- `Templates/Parametrizacao_AgroVector_v4.2.xlsx` — formato simples do CSV nativo do
+- `Templates_Vector/Parametrizacao_AgroVector_v4.2.xlsx` — formato simples do CSV nativo do
   **protótipo** (Nome/Classe/Modelo/...). Sem IDs estáveis; premissas/gatilhos ali são
   para digitação manual na aba Premissas do app, não têm importador de arquivo.
-- `Templates/template_*.xlsx` — **os importadores reais do produto** (implementados em
+- `Templates_Vector/template_*.xlsx` — **os importadores reais do produto** (implementados em
   `apps/importacao/importadores/`), com chaves externas estáveis (id_ativo,
   id_funcionario, id_checklist/id_atividade, id_item, id_os) para permitir reimportação
   (upsert) e reconciliação. É este o formato que vale como contrato.

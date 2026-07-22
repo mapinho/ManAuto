@@ -1,4 +1,4 @@
-"""Testes de integracao dos importadores contra os arquivos REAIS em `Templates/`
+"""Testes de integracao dos importadores contra os arquivos REAIS em `Templates_Vector/`
 (templates Vector) — nao sao amostras sinteticas, sao os arquivos que o
 cliente efetivamente recebe/preenche.
 
@@ -39,7 +39,7 @@ from apps.importacao.models import OrdemServico
 
 pytestmark = pytest.mark.django_db
 
-TEMPLATES_DIR = settings.BASE_DIR / "Templates"
+TEMPLATES_DIR = settings.BASE_DIR / "Templates_Vector"
 
 
 @pytest.fixture

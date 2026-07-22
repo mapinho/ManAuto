@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Selecionar organização · AgroVector{% endblock %}
+{% block content %}
+<div class="stitle">Selecionar organização</div>
+<div class="sdesc">Escolha a organização para acessar o planejamento de manutenção.</div>
+<div class="block">
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Organização</th><th></th></tr></thead>
+    <tbody>
+      {% for organizacao in organizacoes %}
+      <tr>
+        <td class="lbl">{{ organizacao.nome }}</td>
+        <td class="cR"><a class="btn" href="{% url 'premissas:index' org_slug=organizacao.slug %}">Abrir →</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="2" class="mut">Nenhuma organização cadastrada ainda. Rode "make seed-demo" ou "make seed-petribu".</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

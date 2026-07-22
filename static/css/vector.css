@@ -1,0 +1,102 @@
+/* ── VECTOR CONSULTING · IDENTIDADE OFICIAL ──────────────────────────
+   Navy primario  : #1F3060
+   Cinza secundario: #B2B5B7
+   Fundo escuro   : #060d1a  Cards: #0d1530  Borda: #1F3060
+   Semantico      : verde #27c27a · ambar #f59e0b · vermelho #ef4444 · azul #38bdf8
+   Cores Fabio (semaforo, uso obrigatorio em status/badges de aderencia):
+     verde #00FF00 · amarelo #FFFF00 · vermelho #FF3300 (fundo vermelho = fonte branca)
+   Portado de agrovector_manutencao_v4.2_2026-06-16.html para manter
+   continuidade visual com o protótipo (fonte da verdade do produto).
+──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #060d1a; color: #d4dff0; font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; min-height: 100vh; }
+
+#hdr { background: #1F3060; border-bottom: 2px solid #162545; padding: 0 24px; position: sticky; top: 0; z-index: 100; }
+.hdr-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+.brand { font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: -.02em; }
+.brand-sub { font-size: 10px; color: #B2B5B7; letter-spacing: .08em; text-transform: uppercase; margin-top: 2px; }
+.org-badge { font-size: 11px; color: #B2B5B7; background: #162545; border: 1px solid #2a3f7a; border-radius: 20px; padding: 4px 14px; }
+
+.tabs { display: flex; margin-top: 0; padding-bottom: 0; flex-wrap: wrap; background: #1F3060; border-top: 1px solid #2a3f7a; }
+.tab { background: none; border: none; color: #8090b8; padding: 9px 16px; cursor: pointer; font-size: 12px; font-family: inherit; text-decoration: none; border-bottom: 2px solid transparent; transition: color .15s; display: inline-block; }
+.tab:hover { color: #B2B5B7; }
+.tab.on { color: #ffffff; font-weight: 700; border-bottom-color: #B2B5B7; }
+.tab.disabled { color: #2a3f5f; cursor: default; }
+.tab-sep { border-left: 1px solid #2a3f7a; margin: 6px 4px; }
+.tab-phase { padding: 9px 8px; font-size: 10px; color: #3a4f7a; border-bottom: 2px solid transparent; font-weight: 700; }
+
+#main { padding: 22px 24px; max-width: 1380px; margin: 0 auto; }
+.stitle { color: #B2B5B7; font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+.sdesc { color: #3a5070; font-size: 11px; margin-bottom: 16px; }
+.block { margin-bottom: 26px; }
+.blk-t { color: #B2B5B7; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 9px; padding-bottom: 6px; border-bottom: 1px solid #1F3060; display: flex; align-items: center; justify-content: space-between; }
+.tbl-wrap { overflow-x: auto; border: 1px solid #1F3060; border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { padding: 8px 10px; text-align: left; color: #5070a0; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; font-weight: 500; background: #08111f; border-bottom: 1px solid #1F3060; white-space: nowrap; }
+th.of-hdr { background: #1F3060; color: #B2B5B7; text-align: center; }
+th.r { text-align: right; }
+td { padding: 7px 10px; border-bottom: 1px solid #0a1225; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #0d153055; }
+.tr-c td { background: #060d1a !important; }
+.tr-c .cv { color: #27c27a; font-family: monospace; font-weight: 700; }
+.lbl { color: #7a90b0; min-width: 200px; }
+.um { color: #3a5070; font-size: 10px; white-space: nowrap; }
+
+td input[type=number], td input[type=text], td input[type=date] { background: #0d1530; border: 1px solid #1F3060; color: #d4dff0; border-radius: 4px; padding: 3px 7px; font-size: 12px; font-family: monospace; outline: none; width: 100%; min-width: 55px; }
+td input:focus { border-color: #B2B5B7; }
+td select { background: #0d1530; border: 1px solid #1F3060; color: #d4dff0; border-radius: 4px; padding: 3px 7px; font-size: 12px; cursor: pointer; outline: none; width: 100%; }
+input.saved { border-color: #27c27a !important; transition: border-color .3s; }
+input.save-error { border-color: #ef4444 !important; }
+
+.cv { color: #27c27a; font-family: monospace; font-weight: 600; }
+.co { color: #B2B5B7; font-family: monospace; font-weight: 600; }
+.ca { color: #f59e0b; font-family: monospace; }
+.cb { color: #38bdf8; font-family: monospace; }
+.cp { color: #a78bfa; font-family: monospace; }
+.cr { color: #ef4444; font-family: monospace; }
+.cm { font-family: monospace; }
+.cR { text-align: right; }
+.cC { text-align: center; }
+
+.bdg { border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; border: none; cursor: pointer; font-family: inherit; }
+.bg { background: #27c27a20; color: #27c27a; border: 1px solid #27c27a44; }
+.bo { background: #1F306044; color: #B2B5B7; border: 1px solid #2a3f7a; }
+.ba { background: #f59e0b20; color: #f59e0b; border: 1px solid #f59e0b44; }
+.br { background: #ef444420; color: #ef4444; border: 1px solid #ef444444; }
+.bb { background: #38bdf820; color: #38bdf8; border: 1px solid #38bdf844; }
+
+/* Cores Fabio — semaforo de aderencia (regra obrigatoria, ver skill vector-relatorios) */
+.fabio-verde { background: #00FF00; color: #000000; }
+.fabio-amarelo { background: #FFFF00; color: #000000; }
+.fabio-vermelho { background: #FF3300; color: #FFFFFF; }
+
+.btn { background: none; border: 1px solid #1F3060; color: #d4dff0; border-radius: 6px; padding: 7px 14px; font-size: 12px; cursor: pointer; font-family: inherit; transition: all .15s; text-decoration: none; display: inline-block; }
+.btn:hover { border-color: #B2B5B7; color: #B2B5B7; }
+.btnP { background: #1F3060; color: #ffffff; border: 1px solid #2a4080; border-radius: 6px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btnP:hover { background: #2a4080; }
+
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.ibox { padding: 7px 12px; background: #0d1530; border: 1px solid #1F3060; border-radius: 6px; font-size: 11px; color: #3a5070; margin-bottom: 12px; }
+.ibox b { color: #B2B5B7; }
+.ibox .a { color: #f59e0b; }
+.mut { color: #253545; font-size: 10px; }
+.m { color: #253545; font-size: 10px; margin-left: 3px; }
+
+.kpi { background: #0d1530; border: 1px solid #1F3060; border-radius: 8px; padding: 14px 16px; flex: 1; min-width: 120px; }
+.kpi.ok { border-color: #27c27a44; }
+.kpi.warn { border-color: #f59e0b44; }
+.kpi.bad { border-color: #ef444444; }
+.kl { color: #3a5070; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 3px; }
+.kv { font-size: 20px; font-family: monospace; font-weight: 700; line-height: 1.1; color: #B2B5B7; }
+.kv.g { color: #27c27a; } .kv.a { color: #f59e0b; } .kv.b { color: #38bdf8; } .kv.r { color: #ef4444; } .kv.p { color: #a78bfa; }
+.ks { color: #253545; font-size: 10px; margin-top: 3px; }
+.mh { color: #B2B5B7; text-align: center; }
+.row4 { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+tfoot td { border-top: 1px solid #1F3060; font-weight: 700; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #060d1a; }
+::-webkit-scrollbar-thumb { background: #1F3060; border-radius: 2px; }
+
+a { color: #38bdf8; }
