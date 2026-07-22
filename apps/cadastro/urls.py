@@ -29,4 +29,20 @@ urlpatterns = [
         views.pessoas_atualizar_oficina,
         name="pessoas_atualizar_oficina",
     ),
+    path("checklist/", views.checklist, name="checklist"),
+    path(
+        "checklist/atividade/<int:atividade_id>/numero/",
+        views.checklist_atualizar_numero,
+        name="checklist_atualizar_numero",
+    ),
+    path(
+        "checklist/atividade/<int:atividade_id>/texto/",
+        views.checklist_atualizar_texto,
+        name="checklist_atualizar_texto",
+    ),
+    path(
+        "checklist/atividade/<int:atividade_id>/oficina/",
+        views.checklist_atualizar_oficina,
+        name="checklist_atualizar_oficina",
+    ),
 ]

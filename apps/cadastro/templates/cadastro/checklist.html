@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load l10n %}
+{% block title %}Checklist · {{ org.nome }} · AgroVector{% endblock %}
+{% block content %}
+{% comment %}
+Campo HH usa |unlocalize pelo mesmo motivo das demais telas: HTML5
+<input type="number"> exige ponto decimal, mas LANGUAGE_CODE="pt-br" faz
+Django renderizar com virgula. Descricao/Cargo/Tipo sao texto livre (sem
+esse problema). Insumos/Pecas sao so-leitura (vem de AtividadeMaterial,
+carregados pelo importador — apps/importacao/importadores/checklist.py).
+{% endcomment %}
+<div class="stitle">Checklists de Manutenção Preventiva</div>
+<div class="sdesc">Defina atividades, HH, insumos e peças. Os totais de HH alimentam o Plano de Preventivas (herança S⊂A⊂B⊂C⊂D calculada pelo motor).</div>
+
+<div class="row4">
+  <div class="kpi"><div class="kl">Checklists</div><div class="kv">{{ total_checklists }}</div><div class="ks">revisões cadastradas</div></div>
+  <div class="kpi"><div class="kl">Atividades</div><div class="kv">{{ total_atividades }}</div><div class="ks">no total</div></div>
+  <div class="kpi"><div class="kl">Total HH</div><div class="kv" style="color:#f59e0b">{{ total_hh_geral }}</div><div class="ks">soma de todos os checklists</div></div>
+</div>
+
+<form method="get" class="block" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+  <div>
+    <div class="mut">Classe</div>
+    <select name="classe">
+      <option value="">Todas</option>
+      {% for c in classes %}<option value="{{ c.pk }}" {% if filtro_classe == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="mut">Tipo de Preventiva</div>
+    <select name="tipo_prev">
+      <option value="">Todos</option>
+      {% for t in tipos_preventiva %}<option value="{{ t.value }}" {% if filtro_tipo_prev == t.value %}selected{% endif %}>{{ t.label }} ({{ t.value }})</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="mut">Oficina</div>
+    <select name="oficina">
+      <option value="">Todas</option>
+      {% for of in oficinas %}<option value="{{ of.pk }}" {% if filtro_oficina == of.pk|stringformat:"s" %}selected{% endif %}>{{ of.nome }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="mut">Buscar</div>
+    <input type="text" name="busca" value="{{ filtro_busca }}" placeholder="Checklist ou atividade" style="background:#0d1530;border:1px solid #1F3060;color:#d4dff0;border-radius:4px;padding:5px 9px;font-size:12px">
+  </div>
+  <button class="btn" type="submit">Filtrar</button>
+  {% if filtro_classe or filtro_tipo_prev or filtro_oficina or filtro_busca %}<a class="btn" href="{% url 'cadastro:checklist' org_slug=org.slug %}">Limpar</a>{% endif %}
+</form>
+
+<div class="block">
+  <div class="blk-t">Resumo — Todos os Checklists</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Checklist</th><th>Classe</th><th class="cC">Tipo</th><th class="r">Total HH</th><th class="r">Atividades</th><th>Oficinas envolvidas</th></tr></thead>
+    <tbody>
+      {% for grupo in grupos %}
+      <tr>
+        <td>{{ grupo.nome }}</td>
+        <td>{{ grupo.classe }}</td>
+        <td class="cC"><span class="bdg bg">{{ grupo.tipo_prev }}</span></td>
+        <td class="cv cR">{{ grupo.total_hh }}</td>
+        <td class="cm cR">{{ grupo.atividades|length }}</td>
+        <td class="mut">{{ grupo.oficinas }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="mut">Nenhum checklist encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+{% for grupo in grupos %}
+<div class="block">
+  <div class="blk-t">
+    {{ grupo.nome }}
+    <span style="color:#f59e0b;font-size:13px;text-transform:none;font-weight:700">Total: {{ grupo.total_hh }} HH</span>
+  </div>
+  {% if grupo.insumos %}<div class="mut" style="margin-bottom:6px">🛢 Insumos: {{ grupo.insumos }}</div>{% endif %}
+  {% if grupo.pecas %}<div class="mut" style="margin-bottom:8px">🔩 Peças: {{ grupo.pecas }}</div>{% endif %}
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Atividade</th><th>Oficina</th><th>Cargo</th><th>Tipo</th><th>HH</th>
+    </tr></thead>
+    <tbody>
+      {% for atividade in grupo.atividades %}
+      <tr>
+        <td>
+          <input type="text" value="{{ atividade.descricao }}" name="valor" style="width:200px"
+                 hx-post="{% url 'cadastro:checklist_atualizar_texto' org_slug=org.slug atividade_id=atividade.pk %}"
+                 hx-trigger="change" hx-swap="none" hx-vals='{"campo": "descricao"}'>
+        </td>
+        <td>
+          <select hx-post="{% url 'cadastro:checklist_atualizar_oficina' org_slug=org.slug atividade_id=atividade.pk %}"
+                  hx-trigger="change" hx-swap="none" name="oficina_id">
+            {% for of in oficinas %}<option value="{{ of.pk }}" {% if atividade.oficina_id == of.pk %}selected{% endif %}>{{ of.nome }}</option>{% endfor %}
+          </select>
+        </td>
+        <td>
+          <input type="text" value="{{ atividade.cargo }}" name="valor" style="width:110px"
+                 hx-post="{% url 'cadastro:checklist_atualizar_texto' org_slug=org.slug atividade_id=atividade.pk %}"
+                 hx-trigger="change" hx-swap="none" hx-vals='{"campo": "cargo"}'>
+        </td>
+        <td>
+          <input type="text" value="{{ atividade.tipo_atividade }}" name="valor" style="width:110px"
+                 hx-post="{% url 'cadastro:checklist_atualizar_texto' org_slug=org.slug atividade_id=atividade.pk %}"
+                 hx-trigger="change" hx-swap="none" hx-vals='{"campo": "tipo_atividade"}'>
+        </td>
+        <td>
+          <input type="number" step="0.25" min="0" value="{{ atividade.hh|unlocalize }}" name="valor" class="saved" style="width:65px"
+                 hx-post="{% url 'cadastro:checklist_atualizar_numero' org_slug=org.slug atividade_id=atividade.pk %}"
+                 hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+                 hx-vals='{"campo": "hh"}'><span class="m">HH</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot><tr>
+      <td colspan="4" class="mut">Total do checklist</td>
+      <td class="ca" style="font-weight:700">{{ grupo.total_hh }} HH</td>
+    </tr></tfoot>
+  </table></div>
+</div>
+{% empty %}
+<div class="ibox">Nenhuma atividade de checklist cadastrada. Cadastre pelo admin ou importe pelo template Vector.</div>
+{% endfor %}
+{% endblock %}

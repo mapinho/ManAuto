@@ -1,11 +1,16 @@
-"""Telas de Frota e Pessoas — modulos 2 e 3 do roadmap R1 (SPEC_Tecnica_Ambiente.md SS6).
+"""Telas de Frota, Pessoas e Checklist — modulos 2, 3 e 4 do roadmap R1
+(SPEC_Tecnica_Ambiente.md SS6).
 
 Frota: cadastro central de ativos (models.Ativo). Pessoas: banco de mao de
 obra (models.Pessoa), com Custo/HH calculado pelo motor (apps/motor/horas.py)
 usando o calendario e a disponibilidade vigentes (apps/premissas/services.py)
-— a view nunca reimplementa a formula.
+— a view nunca reimplementa a formula. Checklist: atividades de preventiva
+por classe x tipo (models.ChecklistAtividade) agrupadas por revisao; a soma
+de HH por tipo e a heranca cumulativa (S⊂A⊂B⊂C⊂D) sao calculadas pelo motor
+(apps/motor/heranca.py) nas telas de Cronograma/Agenda, nao aqui — esta tela
+so cadastra HH/insumos/pecas por atividade.
 
-Edicao campo a campo via HTMX em ambas, mesmo padrao da tela de Premissas
+Edicao campo a campo via HTMX em todas, mesmo padrao da tela de Premissas
 (apps/premissas/views.py): identificadores de campo viajam no corpo do POST
 via `hx-vals`, nunca na query string.
 
@@ -16,9 +21,11 @@ via `hx-vals`, nunca na query string.
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
+from itertools import groupby
 
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -30,7 +37,16 @@ from apps.motor.proxima_preventiva import calcular_proxima_preventiva
 from apps.motor.tipos import Pessoa as PessoaMotor
 from apps.premissas import services as premissas_services
 
-from .models import Ativo, ClasseAtivo, Oficina, Pessoa, Unidade
+from .models import (
+    Ativo,
+    ChecklistAtividade,
+    ClasseAtivo,
+    ItemMaterial,
+    Oficina,
+    Pessoa,
+    TipoPreventiva,
+    Unidade,
+)
 
 _POR_PAGINA = 50
 
@@ -352,4 +368,129 @@ def pessoas_atualizar_oficina(request, org_slug: str, pessoa_id: int):
     oficina = get_object_or_404(Oficina, organizacao=org, pk=request.POST.get("oficina_id"))
     pessoa.oficina = oficina
     pessoa.save(update_fields=["oficina"])
+    return HttpResponse("")
+
+
+_CHECKLIST_CAMPOS_NUMERICOS = {"hh": "0.25"}
+_CHECKLIST_CAMPOS_TEXTO = ("descricao", "cargo", "tipo_atividade")
+
+
+def _grupo_checklist(atividade: ChecklistAtividade) -> str:
+    return atividade.nome_checklist or f"{atividade.classe.nome} — Revisão {atividade.tipo_prev}"
+
+
+def checklist(request, org_slug: str):
+    org = _get_org(org_slug)
+    atividades = (
+        ChecklistAtividade.objects.for_org(org)
+        .select_related("classe", "oficina")
+        .prefetch_related("materiais__item")
+        .order_by("classe__nome", "tipo_prev", "id_checklist", "seq")
+    )
+
+    classe_id = request.GET.get("classe") or ""
+    tipo_prev = request.GET.get("tipo_prev") or ""
+    oficina_id = request.GET.get("oficina") or ""
+    busca = request.GET.get("busca") or ""
+    if classe_id:
+        atividades = atividades.filter(classe_id=classe_id)
+    if tipo_prev:
+        atividades = atividades.filter(tipo_prev=tipo_prev)
+    if oficina_id:
+        atividades = atividades.filter(oficina_id=oficina_id)
+    if busca:
+        atividades = atividades.filter(
+            Q(nome_checklist__icontains=busca) | Q(descricao__icontains=busca)
+        )
+
+    grupos = []
+    total_atividades = 0
+    for chave, itens_iter in groupby(atividades, key=_grupo_checklist):
+        itens = list(itens_iter)
+        total_atividades += len(itens)
+        insumos, pecas = [], []
+        for atividade in itens:
+            for material in atividade.materiais.all():
+                texto = f"{material.item.descricao} ({material.qtd} {material.unidade})"
+                alvo = insumos if material.item.tipo == ItemMaterial.Tipo.INSUMO else pecas
+                alvo.append(texto)
+        grupos.append(
+            {
+                "nome": chave,
+                "classe": itens[0].classe.nome,
+                "tipo_prev": itens[0].tipo_prev,
+                "total_hh": round(sum(float(a.hh) for a in itens), 2),
+                "atividades": itens,
+                "oficinas": ", ".join(sorted({a.oficina.nome for a in itens})),
+                "insumos": " · ".join(insumos),
+                "pecas": " · ".join(pecas),
+            }
+        )
+
+    classes = list(ClasseAtivo.objects.for_org(org).order_by("nome"))
+    oficinas = list(Oficina.objects.for_org(org).order_by("nome"))
+
+    contexto = {
+        "org": org,
+        "active_tab": "checklist",
+        "grupos": grupos,
+        "total_checklists": len(grupos),
+        "total_atividades": total_atividades,
+        "total_hh_geral": round(sum(g["total_hh"] for g in grupos), 2),
+        "classes": classes,
+        "oficinas": oficinas,
+        "tipos_preventiva": list(TipoPreventiva),
+        "filtro_classe": classe_id,
+        "filtro_tipo_prev": tipo_prev,
+        "filtro_oficina": oficina_id,
+        "filtro_busca": busca,
+    }
+    return render(request, "cadastro/checklist.html", contexto)
+
+
+@require_POST
+def checklist_atualizar_numero(request, org_slug: str, atividade_id: int):
+    org = _get_org(org_slug)
+    atividade = get_object_or_404(ChecklistAtividade, organizacao=org, pk=atividade_id)
+    campo = request.POST.get("campo")
+    if campo not in _CHECKLIST_CAMPOS_NUMERICOS:
+        return HttpResponse("campo inválido", status=400)
+    try:
+        valor = _parse_decimal(request.POST.get("valor"))
+    except ValidationError as exc:
+        return HttpResponse(str(exc), status=400)
+
+    setattr(atividade, campo, valor)
+    atividade.save(update_fields=[campo])
+    return _campo_numero(
+        request,
+        valor=valor,
+        post_url=reverse("cadastro:checklist_atualizar_numero", args=[org.slug, atividade.pk]),
+        step=_CHECKLIST_CAMPOS_NUMERICOS[campo],
+        hx_vals=f'{{"campo": "{campo}"}}',
+    )
+
+
+@require_POST
+def checklist_atualizar_texto(request, org_slug: str, atividade_id: int):
+    org = _get_org(org_slug)
+    atividade = get_object_or_404(ChecklistAtividade, organizacao=org, pk=atividade_id)
+    campo = request.POST.get("campo")
+    if campo not in _CHECKLIST_CAMPOS_TEXTO:
+        return HttpResponse("campo inválido", status=400)
+    valor = (request.POST.get("valor") or "").strip()
+    if not valor:
+        return HttpResponse("valor não pode ser vazio", status=400)
+    setattr(atividade, campo, valor)
+    atividade.save(update_fields=[campo])
+    return HttpResponse("")
+
+
+@require_POST
+def checklist_atualizar_oficina(request, org_slug: str, atividade_id: int):
+    org = _get_org(org_slug)
+    atividade = get_object_or_404(ChecklistAtividade, organizacao=org, pk=atividade_id)
+    oficina = get_object_or_404(Oficina, organizacao=org, pk=request.POST.get("oficina_id"))
+    atividade.oficina = oficina
+    atividade.save(update_fields=["oficina"])
     return HttpResponse("")
