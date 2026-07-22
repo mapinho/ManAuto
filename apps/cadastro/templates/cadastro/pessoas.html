@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load l10n %}
+{% block title %}Pessoas · {{ org.nome }} · AgroVector{% endblock %}
+{% block content %}
+{% comment %}
+Campos numericos editaveis usam |unlocalize pelo mesmo motivo das telas de
+Premissas e Frota: HTML5 <input type="number"> exige ponto decimal, mas
+LANGUAGE_CODE="pt-br" faz Django renderizar com virgula. Custo Mensal e
+Custo/HH sao celulas so-leitura (calculadas pelo motor) — continuam em
+formato brasileiro (virgula), como definido para exibicao.
+{% endcomment %}
+<div class="stitle">Pessoas &amp; Mão de Obra</div>
+<div class="sdesc">Banco de dados centralizado. O <b style="color:#27c27a">Custo/HH</b> é calculado automaticamente usando as Horas Líquidas das Premissas de cada oficina.</div>
+
+<div class="row4">
+  <div class="kpi"><div class="kl">Equipe ativa</div><div class="kv">{{ total_ativos }}</div><div class="ks">pessoas</div></div>
+  <div class="kpi"><div class="kl">Custo MO/mês</div><div class="kv" style="color:#f59e0b">R$ {{ custo_total_mes }}</div><div class="ks">total com encargos</div></div>
+  <div class="kpi"><div class="kl">Custo MO/ano</div><div class="kv" style="color:#f59e0b">R$ {{ custo_total_ano }}</div><div class="ks">projeção anual</div></div>
+  {% for c in cards_oficina %}
+  <div class="kpi" style="min-width:150px">
+    <div class="kl">{{ c.nome }}</div>
+    <div class="kv" style="font-size:16px;color:#38bdf8">{{ c.qtd }}</div>
+    <div class="ks">{{ c.liquidas }} HH líq/dia</div>
+  </div>
+  {% endfor %}
+</div>
+
+<form method="get" class="block" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+  <div>
+    <div class="mut">Oficina</div>
+    <select name="oficina">
+      <option value="">Todas</option>
+      {% for of in oficinas %}<option value="{{ of.pk }}" {% if filtro_oficina == of.pk|stringformat:"s" %}selected{% endif %}>{{ of.nome }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="mut">Turno</div>
+    <select name="turno">
+      <option value="">Todos</option>
+      {% for t in turno_opcoes %}<option value="{{ t.value }}" {% if filtro_turno == t.value %}selected{% endif %}>{{ t.label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="mut">Status</div>
+    <select name="status">
+      <option value="">Todos</option>
+      {% for s in status_opcoes %}<option value="{{ s.value }}" {% if filtro_status == s.value %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="mut">Buscar</div>
+    <input type="text" name="busca" value="{{ filtro_busca }}" placeholder="Nome da pessoa" style="background:#0d1530;border:1px solid #1F3060;color:#d4dff0;border-radius:4px;padding:5px 9px;font-size:12px">
+  </div>
+  <button class="btn" type="submit">Filtrar</button>
+  {% if filtro_oficina or filtro_turno or filtro_status or filtro_busca %}<a class="btn" href="{% url 'cadastro:pessoas' org_slug=org.slug %}">Limpar</a>{% endif %}
+</form>
+
+<div class="tbl-wrap"><table>
+  <thead><tr>
+    <th>Nome</th><th>Cargo</th><th>Oficina</th><th>Turno</th>
+    <th>Salário</th><th>Encargos</th><th class="r">Custo Mensal</th><th class="r">Custo/HH</th><th>Status</th>
+  </tr></thead>
+  <tbody>
+    {% for pessoa in pagina.object_list %}
+    <tr style="{% if pessoa.status != 'Ativo' %}opacity:0.4{% endif %}">
+      <td>{{ pessoa.nome }}</td>
+      <td>{{ pessoa.cargo }}</td>
+      <td>
+        <select hx-post="{% url 'cadastro:pessoas_atualizar_oficina' org_slug=org.slug pessoa_id=pessoa.pk %}"
+                hx-trigger="change" hx-swap="none" name="oficina_id">
+          {% for of in oficinas %}<option value="{{ of.pk }}" {% if pessoa.oficina_id == of.pk %}selected{% endif %}>{{ of.nome }}</option>{% endfor %}
+        </select>
+      </td>
+      <td>
+        <select hx-post="{% url 'cadastro:pessoas_atualizar_select' org_slug=org.slug pessoa_id=pessoa.pk %}"
+                hx-trigger="change" hx-swap="none" name="valor" hx-vals='{"campo": "turno"}'>
+          {% for t in turno_opcoes %}<option value="{{ t.value }}" {% if pessoa.turno == t.value %}selected{% endif %}>{{ t.label }}</option>{% endfor %}
+        </select>
+      </td>
+      <td>
+        <input type="number" step="100" min="0" value="{{ pessoa.salario|unlocalize }}" name="valor" class="saved"
+               hx-post="{% url 'cadastro:pessoas_atualizar_numero' org_slug=org.slug pessoa_id=pessoa.pk %}"
+               hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+               hx-vals='{"campo": "salario"}'>
+      </td>
+      <td>
+        <input type="number" step="1" min="0" value="{{ pessoa.encargos_pct|unlocalize }}" name="valor" class="saved"
+               hx-post="{% url 'cadastro:pessoas_atualizar_numero' org_slug=org.slug pessoa_id=pessoa.pk %}"
+               hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+               hx-vals='{"campo": "encargos_pct"}'><span class="m">%</span>
+      </td>
+      <td class="cv cR">R$ {{ pessoa.custo.custo_mensal }}</td>
+      <td class="ca cR">R$ {{ pessoa.custo.custo_hora }}<span class="m">/HH</span></td>
+      <td>
+        <select hx-post="{% url 'cadastro:pessoas_atualizar_select' org_slug=org.slug pessoa_id=pessoa.pk %}"
+                hx-trigger="change" hx-swap="none" name="valor" hx-vals='{"campo": "status"}'>
+          {% for s in status_opcoes %}<option value="{{ s.value }}" {% if pessoa.status == s.value %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+        </select>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="9" class="mut">Nenhuma pessoa encontrada.</td></tr>
+    {% endfor %}
+  </tbody>
+  <tfoot><tr>
+    <td colspan="6" style="color:#27c27a;font-size:11px">TOTAL EQUIPE ATIVA ({{ total_ativos }} pessoas)</td>
+    <td class="cv cR">R$ {{ custo_total_mes }}/mês</td>
+    <td colspan="2"></td>
+  </tr></tfoot>
+</table></div>
+
+{% if pagina.paginator.num_pages > 1 %}
+<div style="margin-top:14px;display:flex;gap:6px;align-items:center">
+  {% if pagina.has_previous %}<a class="btn" href="?{{ query_sem_page }}&page={{ pagina.previous_page_number }}">‹ Anterior</a>{% endif %}
+  <span class="mut">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+  {% if pagina.has_next %}<a class="btn" href="?{{ query_sem_page }}&page={{ pagina.next_page_number }}">Próxima ›</a>{% endif %}
+</div>
+{% endif %}
+
+<div style="margin-top:22px">
+  <div class="blk-t">Resumo por Oficina</div>
+  <div class="tbl-wrap" style="max-width:500px"><table>
+    <thead><tr><th>Oficina</th><th class="r">Pessoas</th><th class="r">Custo/mês</th><th class="r">HH disponível/mês</th></tr></thead>
+    <tbody>
+      {% for r in resumo_oficina %}
+      <tr>
+        <td>{{ r.nome }}</td>
+        <td class="cv cR">{{ r.qtd }}</td>
+        <td class="ca cR">R$ {{ r.custo_mes }}</td>
+        <td class="cb cR">{{ r.hh_mes }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot><tr>
+      <td style="color:#27c27a">TOTAL</td>
+      <td class="cv cR">{{ total_ativos }}</td>
+      <td class="ca cR">R$ {{ custo_total_mes }}</td>
+      <td class="cb cR">—</td>
+    </tr></tfoot>
+  </table></div>
+</div>
+{% endblock %}

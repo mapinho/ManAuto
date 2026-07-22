@@ -26,22 +26,8 @@ from django.views.decorators.http import require_POST
 
 from apps.cadastro.models import ClasseAtivo, Gatilho, Oficina, TipoPreventiva, Unidade
 from apps.core.models import Organizacao
-from apps.motor.heranca import HERANCA_PADRAO
-from apps.motor.horas import calc_horas_liquidas
-from apps.motor.tipos import DispOficina
 
-from .models import ConjuntoPremissas
-
-_DISP_PADRAO = {
-    "h_brutas": 8.8,
-    "almoco": 1.0,
-    "cafe": 0.17,
-    "prod": 80,
-    "abs": 5,
-    "ferias": 8.33,
-    "trein": 8,
-    "abr_os": 0.17,
-}
+from . import services
 
 # (rotulo, unidade de medida, nome do campo, passo do input)
 _LINHAS_INDICES = (
@@ -76,70 +62,12 @@ MESES = (
     "Dez",
 )
 
-_CALENDARIO_PADRAO = {
-    "dias_uteis": [22] * 12,
-    "safra": [False] * 12,
-    "sazonal": [1.0] * 12,
-    "inicio_safra": "2026-04-01",
-    "fim_safra": "2026-11-30",
-    "heranca": {tipo: list(itens) for tipo, itens in HERANCA_PADRAO.items()},
-}
-
 _CAMPOS_INDICES = ("prev_pct", "corr_pct", "deflator_pct", "terceiros_pct")
 _CAMPOS_DISP = ("h_brutas", "almoco", "cafe", "prod", "abs", "ferias", "trein", "abr_os")
 
 
 def _get_org(org_slug: str) -> Organizacao:
     return get_object_or_404(Organizacao, slug=org_slug)
-
-
-def _conjunto_vigente(org: Organizacao, *, travar: bool = False) -> ConjuntoPremissas:
-    """`travar=True` bloqueia a linha (SELECT ... FOR UPDATE) — exige rodar dentro
-    de `transaction.atomic()`. Necessario em toda leitura-e-gravacao do JSON
-    `calendario`: sem lock, dois POSTs quase simultaneos (usuario tabulando por
-    varias celulas do calendario) leem o mesmo JSON antes de qualquer um salvar,
-    e o segundo `save()` sobrescreve a mudanca do primeiro (visto na pratica:
-    8 campos de disponibilidade enviados em paralelo perderam 1 atualizacao).
-    """
-    qs = ConjuntoPremissas.objects.for_org(org).filter(vigente=True).order_by("-versao")
-    if travar:
-        qs = qs.select_for_update()
-    conjunto = qs.first()
-    if conjunto is None:
-        proxima_versao = (
-            ConjuntoPremissas.objects.for_org(org)
-            .order_by("-versao")
-            .values_list("versao", flat=True)
-            .first()
-            or 0
-        ) + 1
-        conjunto = ConjuntoPremissas.objects.create(
-            organizacao=org,
-            versao=proxima_versao,
-            vigente=True,
-            calendario=dict(_CALENDARIO_PADRAO),
-        )
-    return conjunto
-
-
-def _calendario(conjunto: ConjuntoPremissas) -> dict:
-    return {**_CALENDARIO_PADRAO, **conjunto.calendario}
-
-
-def _horas_liquidas(oficina: Oficina):
-    """Chama o motor (apps/motor/horas.py) — a view nunca reimplementa a formula."""
-    dados = {**_DISP_PADRAO, **oficina.disp_mo}
-    disp = DispOficina(
-        h_brutas=float(dados["h_brutas"]),
-        almoco=float(dados["almoco"]),
-        cafe=float(dados["cafe"]),
-        prod=float(dados["prod"]),
-        abs_=float(dados["abs"]),
-        ferias=float(dados["ferias"]),
-        trein=float(dados["trein"]),
-        abr_os=float(dados["abr_os"]),
-    )
-    return calc_horas_liquidas(disp)
 
 
 def _parse_decimal(valor: str) -> Decimal:
@@ -162,12 +90,12 @@ def index(request, org_slug: str):
     org = _get_org(org_slug)
     oficinas = list(Oficina.objects.for_org(org).order_by("nome"))
     classes = list(ClasseAtivo.objects.for_org(org).prefetch_related("gatilhos").order_by("nome"))
-    conjunto = _conjunto_vigente(org)
-    calendario = _calendario(conjunto)
+    conjunto = services.conjunto_vigente(org)
+    calendario = services.calendario(conjunto)
     dias_medios = sum(calendario["dias_uteis"]) / 12
 
     for oficina in oficinas:
-        horas = _horas_liquidas(oficina)
+        horas = services.horas_liquidas(oficina)
         oficina.horas_liquidas = horas
         oficina.horas_liquidas_mes = round(horas.liquidas * dias_medios, 2)
 
@@ -191,7 +119,9 @@ def index(request, org_slug: str):
             "unidade": unidade,
             "campo": campo,
             "passo": passo,
-            "valores": [(of, of.disp_mo.get(campo, _DISP_PADRAO.get(campo, 0))) for of in oficinas],
+            "valores": [
+                (of, of.disp_mo.get(campo, services.DISP_PADRAO.get(campo, 0))) for of in oficinas
+            ],
         }
         for label, unidade, campo, passo in _LINHAS_DISP
     ]
@@ -225,7 +155,7 @@ def index(request, org_slug: str):
         "meses": list(enumerate(MESES)),
         "tipos_preventiva": list(TipoPreventiva),
         "unidades": list(Unidade),
-        "heranca": calendario.get("heranca") or _CALENDARIO_PADRAO["heranca"],
+        "heranca": calendario.get("heranca") or services.CALENDARIO_PADRAO["heranca"],
     }
     return render(request, "premissas/index.html", contexto)
 
@@ -303,8 +233,8 @@ def atualizar_calendario_mes(request, org_slug: str):
         return HttpResponse(str(exc), status=400)
 
     with transaction.atomic():
-        conjunto = _conjunto_vigente(org, travar=True)
-        calendario = _calendario(conjunto)
+        conjunto = services.conjunto_vigente(org, travar=True)
+        calendario = services.calendario(conjunto)
         lista = list(calendario[campo])
         lista[indice] = int(valor) if campo == "dias_uteis" else float(valor)
         calendario[campo] = lista
@@ -330,8 +260,8 @@ def alternar_safra_mes(request, org_slug: str):
         return HttpResponse("índice inválido", status=400)
 
     with transaction.atomic():
-        conjunto = _conjunto_vigente(org, travar=True)
-        calendario = _calendario(conjunto)
+        conjunto = services.conjunto_vigente(org, travar=True)
+        calendario = services.calendario(conjunto)
         safra = list(calendario["safra"])
         safra[indice] = not safra[indice]
         calendario["safra"] = safra
@@ -353,8 +283,8 @@ def alternar_safra_mes(request, org_slug: str):
 def atualizar_datas_safra(request, org_slug: str):
     org = _get_org(org_slug)
     with transaction.atomic():
-        conjunto = _conjunto_vigente(org, travar=True)
-        calendario = _calendario(conjunto)
+        conjunto = services.conjunto_vigente(org, travar=True)
+        calendario = services.calendario(conjunto)
         inicio = request.POST.get("inicio_safra") or calendario["inicio_safra"]
         fim = request.POST.get("fim_safra") or calendario["fim_safra"]
         calendario["inicio_safra"] = inicio
