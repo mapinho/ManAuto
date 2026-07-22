@@ -23,7 +23,7 @@
   <div class="tabs">
     <span class="tab-phase">R1</span>
     <a class="tab {% if active_tab == 'premissas' %}on{% endif %}" href="{% url 'premissas:index' org_slug=org.slug %}">📐 Premissas</a>
-    <a class="tab disabled">🚛 Frota</a>
+    <a class="tab {% if active_tab == 'frota' %}on{% endif %}" href="{% url 'cadastro:frota' org_slug=org.slug %}">🚛 Frota</a>
     <a class="tab disabled">👷 Pessoas</a>
     <a class="tab disabled">✅ Checklist</a>
     <a class="tab disabled">📅 Cronograma</a>

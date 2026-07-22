@@ -13,4 +13,5 @@ urlpatterns = [
     path("api/v1/", include("config.api_urls")),
     path("", include("apps.core.urls")),
     path("<slug:org_slug>/premissas/", include("apps.premissas.urls")),
+    path("<slug:org_slug>/frota/", include("apps.cadastro.urls")),
 ]

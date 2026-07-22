@@ -153,7 +153,7 @@ def _parse_decimal(valor: str) -> Decimal:
 def _campo_numero(request, *, valor, post_url: str, step: str, hx_vals: str | None = None):
     return render(
         request,
-        "premissas/_campo_numero.html",
+        "_campo_numero.html",
         {"valor": valor, "post_url": post_url, "step": step, "hx_vals": hx_vals},
     )
 

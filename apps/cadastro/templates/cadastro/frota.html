@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load l10n %}
+{% block title %}Frota · {{ org.nome }} · AgroVector{% endblock %}
+{% block content %}
+{% comment %}
+Campos numericos editaveis usam |unlocalize pelo mesmo motivo da tela de
+Premissas (apps/premissas/templates/premissas/index.html): HTML5
+<input type="number"> exige ponto decimal, mas LANGUAGE_CODE="pt-br" faz
+Django renderizar com virgula.
+{% endcomment %}
+<div class="stitle">Registro de Frota</div>
+<div class="sdesc">Cadastro central de ativos. A coluna <b style="color:#27c27a">Próxima Preventiva</b> é calculada automaticamente a partir do uso atual e do uso médio mensal.</div>
+
+<div class="row4">
+  <div class="kpi"><div class="kl">Total de ativos</div><div class="kv">{{ total_ativos }}</div><div class="ks">{{ total_ativos_ativos }} ativos</div></div>
+  {% for kpi in kpis_classe %}
+  <div class="kpi"><div class="kl">{{ kpi.nome }}</div><div class="kv" style="font-size:16px">{{ kpi.total }}</div><div class="ks">ativos</div></div>
+  {% endfor %}
+</div>
+
+<form method="get" class="block" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+  <div>
+    <div class="mut">Classe</div>
+    <select name="classe">
+      <option value="">Todas</option>
+      {% for c in classes %}<option value="{{ c.pk }}" {% if filtro_classe == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="mut">Status</div>
+    <select name="status">
+      <option value="">Todos</option>
+      {% for s in status_opcoes %}<option value="{{ s.value }}" {% if filtro_status == s.value %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="mut">Oficina</div>
+    <select name="oficina">
+      <option value="">Todas</option>
+      {% for of in oficinas %}<option value="{{ of.pk }}" {% if filtro_oficina == of.pk|stringformat:"s" %}selected{% endif %}>{{ of.nome }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="mut">Buscar</div>
+    <input type="text" name="busca" value="{{ filtro_busca }}" placeholder="Nome do ativo" style="background:#0d1530;border:1px solid #1F3060;color:#d4dff0;border-radius:4px;padding:5px 9px;font-size:12px">
+  </div>
+  <button class="btn" type="submit">Filtrar</button>
+  {% if filtro_classe or filtro_status or filtro_oficina or filtro_busca %}<a class="btn" href="{% url 'cadastro:frota' org_slug=org.slug %}">Limpar</a>{% endif %}
+</form>
+
+<div class="tbl-wrap"><table>
+  <thead><tr>
+    <th>Nome</th><th>Classe</th><th>Oficina</th><th>Status</th><th>Gatilho</th>
+    <th>Uso Atual</th><th style="color:#38bdf8">Uso/sem Safra</th><th style="color:#4a6d8c">Uso/sem Entress.</th>
+    <th>Intervalo Prev.</th><th>Próxima Preventiva</th><th>Garantia</th>
+  </tr></thead>
+  <tbody>
+    {% for ativo in pagina.object_list %}
+    <tr style="{% if ativo.status != 'Ativo' %}opacity:0.4{% endif %}">
+      <td>{{ ativo.nome }}</td>
+      <td>
+        <select hx-post="{% url 'cadastro:atualizar_classe' org_slug=org.slug ativo_id=ativo.pk %}"
+                hx-trigger="change" hx-swap="none" name="classe_id">
+          {% for c in classes %}<option value="{{ c.pk }}" {% if ativo.classe_id == c.pk %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </td>
+      <td>
+        <select hx-post="{% url 'cadastro:atualizar_oficina' org_slug=org.slug ativo_id=ativo.pk %}"
+                hx-trigger="change" hx-swap="none" name="oficina_id">
+          <option value="">—</option>
+          {% for of in oficinas %}<option value="{{ of.pk }}" {% if ativo.oficina_id == of.pk %}selected{% endif %}>{{ of.nome }}</option>{% endfor %}
+        </select>
+      </td>
+      <td>
+        <select hx-post="{% url 'cadastro:atualizar_select' org_slug=org.slug ativo_id=ativo.pk %}"
+                hx-trigger="change" hx-swap="none" name="valor" hx-vals='{"campo": "status"}'>
+          {% for s in status_opcoes %}<option value="{{ s.value }}" {% if ativo.status == s.value %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+        </select>
+      </td>
+      <td>
+        <select hx-post="{% url 'cadastro:atualizar_select' org_slug=org.slug ativo_id=ativo.pk %}"
+                hx-trigger="change" hx-swap="none" name="valor" hx-vals='{"campo": "tipo_gatilho"}'>
+          {% for u in unidade_opcoes %}<option value="{{ u.value }}" {% if ativo.tipo_gatilho == u.value %}selected{% endif %}>{{ u.label }}</option>{% endfor %}
+        </select>
+      </td>
+      <td>
+        <input type="number" step="10" min="0" value="{{ ativo.uso_atual|unlocalize }}" name="valor" class="saved"
+               hx-post="{% url 'cadastro:atualizar_numero' org_slug=org.slug ativo_id=ativo.pk %}"
+               hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+               hx-vals='{"campo": "uso_atual"}'>
+      </td>
+      <td>
+        <input type="number" step="5" min="0" value="{{ ativo.uso_sem_safra|unlocalize }}" name="valor" class="saved"
+               hx-post="{% url 'cadastro:atualizar_numero' org_slug=org.slug ativo_id=ativo.pk %}"
+               hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+               hx-vals='{"campo": "uso_sem_safra"}'>
+      </td>
+      <td>
+        <input type="number" step="5" min="0" value="{{ ativo.uso_sem_entressafra|unlocalize }}" name="valor" class="saved"
+               hx-post="{% url 'cadastro:atualizar_numero' org_slug=org.slug ativo_id=ativo.pk %}"
+               hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+               hx-vals='{"campo": "uso_sem_entressafra"}'>
+      </td>
+      <td>
+        <input type="number" step="50" min="0" value="{{ ativo.intervalo|unlocalize }}" name="valor" class="saved"
+               hx-post="{% url 'cadastro:atualizar_numero' org_slug=org.slug ativo_id=ativo.pk %}"
+               hx-trigger="change" hx-target="this" hx-swap="outerHTML"
+               hx-vals='{"campo": "intervalo"}'>
+      </td>
+      <td class="{% if ativo.proxima_preventiva.meses <= 0 %}cr{% elif ativo.proxima_preventiva.meses <= 1 %}ca{% elif ativo.proxima_preventiva.meses <= 3 %}cb{% else %}cv{% endif %}" style="white-space:nowrap;font-weight:700">
+        {% if ativo.proxima_preventiva.meses <= 0 %}⚠ VENCIDA{% elif ativo.proxima_preventiva.meses < 1 %}&lt; 1 mês{% else %}{{ ativo.proxima_preventiva.meses }} meses{% endif %}
+        <br><span class="mut">{{ ativo.proxima_preventiva.restante }} {{ ativo.tipo_gatilho }} restantes</span>
+      </td>
+      <td class="cC">
+        <input type="checkbox" {% if ativo.garantia %}checked{% endif %}
+               hx-post="{% url 'cadastro:atualizar_garantia' org_slug=org.slug ativo_id=ativo.pk %}"
+               hx-trigger="change" hx-swap="none"
+               hx-vals='js:{valor: event.target.checked}'
+               style="accent-color:#27c27a">
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="11" class="mut">Nenhum ativo encontrado.</td></tr>
+    {% endfor %}
+  </tbody>
+</table></div>
+
+<div class="mut" style="margin-top:8px">🔴 Vencida · 🟡 &lt;1 mês · 🔵 &lt;3 meses · 🟢 Em dia</div>
+
+{% if pagina.paginator.num_pages > 1 %}
+<div style="margin-top:14px;display:flex;gap:6px;align-items:center">
+  {% if pagina.has_previous %}<a class="btn" href="?{{ query_sem_page }}&page={{ pagina.previous_page_number }}">‹ Anterior</a>{% endif %}
+  <span class="mut">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+  {% if pagina.has_next %}<a class="btn" href="?{{ query_sem_page }}&page={{ pagina.next_page_number }}">Próxima ›</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
