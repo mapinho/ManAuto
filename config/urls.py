@@ -14,4 +14,5 @@ urlpatterns = [
     path("", include("apps.core.urls")),
     path("<slug:org_slug>/premissas/", include("apps.premissas.urls")),
     path("<slug:org_slug>/", include("apps.cadastro.urls")),
+    path("<slug:org_slug>/cronograma/", include("apps.plano.urls")),
 ]

@@ -154,6 +154,7 @@ class EntradaMensal:
 class EventoAgenda:
     data: date
     ativo: str
+    ativo_id: int
     classe: str
     tipo: str
     hh: float

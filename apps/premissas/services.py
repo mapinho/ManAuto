@@ -9,11 +9,14 @@ reimplementa a formula: quem calcula e sempre o motor (apps/motor/).
 
 from __future__ import annotations
 
-from apps.cadastro.models import Oficina
+from datetime import date
+
+from apps.cadastro.models import ClasseAtivo, Oficina
 from apps.core.models import Organizacao
 from apps.motor.heranca import HERANCA_PADRAO
 from apps.motor.horas import calc_horas_liquidas
-from apps.motor.tipos import DispOficina, HorasLiquidas
+from apps.motor.tipos import DispOficina, GatilhosClasse, HorasLiquidas, IndicesOficina, Premissas
+from apps.motor.tipos import Gatilho as GatilhoMotor
 
 from .models import ConjuntoPremissas
 
@@ -89,6 +92,46 @@ def horas_liquidas(oficina: Oficina) -> HorasLiquidas:
     return calc_horas_liquidas(disp_oficina(oficina))
 
 
+def montar_premissas(org: Organizacao) -> Premissas:
+    """Monta o `Premissas` do motor (apps/motor/tipos.py) a partir do cadastro
+    vigente da organizacao — usado pelas telas/tarefas que rodam o motor
+    (Cronograma, Agenda, Disponibilidade em apps/plano/)."""
+    oficinas_qs = list(Oficina.objects.for_org(org).order_by("nome"))
+    conjunto = conjunto_vigente(org)
+    cal = calendario(conjunto)
+
+    indices = {
+        of.nome: IndicesOficina(
+            prev=float(of.prev_pct),
+            corr=float(of.corr_pct),
+            deflator=float(of.deflator_pct),
+            terceiros=float(of.terceiros_pct),
+        )
+        for of in oficinas_qs
+    }
+    disp = {of.nome: disp_oficina(of) for of in oficinas_qs}
+
+    gatilhos = {}
+    for classe in ClasseAtivo.objects.for_org(org).prefetch_related("gatilhos"):
+        itvs = tuple(
+            GatilhoMotor(valor=float(g.intervalo), tipo=g.tipo) for g in classe.gatilhos.all()
+        )
+        gatilhos[classe.nome] = GatilhosClasse(tipo_medida=classe.unidade, itvs=itvs)
+
+    return Premissas(
+        oficinas=tuple(of.nome for of in oficinas_qs),
+        indices=indices,
+        disp=disp,
+        dias_uteis=tuple(cal["dias_uteis"]),
+        safra=tuple(cal["safra"]),
+        sazonal=tuple(cal["sazonal"]),
+        gatilhos=gatilhos,
+        inicio_safra=date.fromisoformat(cal["inicio_safra"]),
+        fim_safra=date.fromisoformat(cal["fim_safra"]),
+        heranca={tipo: tuple(itens) for tipo, itens in cal["heranca"].items()},
+    )
+
+
 __all__ = [
     "DISP_PADRAO",
     "CALENDARIO_PADRAO",
@@ -96,4 +139,5 @@ __all__ = [
     "calendario",
     "disp_oficina",
     "horas_liquidas",
+    "montar_premissas",
 ]

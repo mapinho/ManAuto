@@ -21,6 +21,16 @@ class PlanoAnual(OrgScopedModel):
         ConjuntoPremissas, on_delete=models.PROTECT, related_name="planos"
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.RASCUNHO)
+    hh_prev_por_oficina = models.JSONField(
+        default=dict,
+        help_text=(
+            "Saida de apps.motor.plano.calc_plan_prev: {oficina: [12 floats]}. "
+            "Persistido porque depende da simulacao semanal completa da frota "
+            "(apps.motor.cronograma) — recalculado apenas em apps/plano/services.py, "
+            "nunca a partir dos EventoPreventiva individuais (que guardam so a "
+            "'oficina principal' de cada evento, nao o rateio entre oficinas)."
+        ),
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -39,6 +49,9 @@ class EventoPreventiva(OrgScopedModel):
     ativo = models.ForeignKey(Ativo, on_delete=models.PROTECT, related_name="eventos_preventiva")
     tipo = models.CharField(max_length=1, choices=TipoPreventiva.choices)
     hh = models.DecimalField(max_digits=6, decimal_places=2)
+    count = models.PositiveSmallIntegerField(
+        default=1, help_text="Numero de cruzamentos de gatilho agregados nesta semana/evento."
+    )
     oficina = models.ForeignKey(
         Oficina, on_delete=models.PROTECT, related_name="eventos_preventiva"
     )

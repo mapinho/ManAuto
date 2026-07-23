@@ -69,6 +69,7 @@ def build_agenda_eventos(
                 EventoAgenda(
                     data=data_evento,
                     ativo=ativo.nome,
+                    ativo_id=ativo.id,
                     classe=ativo.classe,
                     tipo=entrada.tipo,
                     hh=entrada.hh,

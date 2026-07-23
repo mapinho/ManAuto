@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load plano_extras %}
+{% block title %}Cronograma · {{ org.nome }} · AgroVector{% endblock %}
+{% block content %}
+<div class="stitle">Cronograma Semanal de Preventivas — Calendário Agrícola</div>
+<div class="sdesc">52 semanas a partir do início da safra · 🌾 = semanas de safra · HH calculadas com herança cumulativa de checklists.</div>
+
+<div id="recalculo-status"></div>
+<div class="block" style="margin-bottom:16px">
+  <button class="btnP" hx-post="{% url 'plano:recalcular' org_slug=org.slug %}"
+          hx-target="#recalculo-status" hx-swap="innerHTML">
+    🔄 Recalcular Plano
+  </button>
+  {% if plano %}<span class="mut" style="margin-left:10px">Último cálculo: plano #{{ plano.pk }} — {{ plano.criado_em }}</span>{% endif %}
+</div>
+
+{% if not plano %}
+<div class="ibox">Nenhum plano calculado ainda para esta organização. Clique em <b>Recalcular Plano</b> acima (exige um worker Procrastinate rodando, ou use <code>manage.py recalcula_plano --org {{ org.slug }}</code> para calcular na hora).</div>
+{% else %}
+
+<div class="row4">
+  <div class="kpi"><div class="kl">Safra inicia em</div><div class="kv" style="font-size:14px">{{ semanas.0.data }}</div></div>
+  <div class="kpi"><div class="kl">Preventivas programadas</div><div class="kv" style="color:#a78bfa">{{ total_preventivas }}</div><div class="ks">52 semanas</div></div>
+  <div class="kpi"><div class="kl">HH Preventiva total</div><div class="kv" style="color:#f59e0b">{{ total_hh }}</div></div>
+  <div class="kpi {% if conflitos > 0 %}bad{% else %}ok{% endif %}"><div class="kl">Semanas com conflito</div><div class="kv" style="color:{% if conflitos > 0 %}#ef4444{% else %}#27c27a{% endif %}">{{ conflitos }}</div><div class="ks">demanda &gt; capacidade</div></div>
+  <div class="kpi"><div class="kl">Capacidade semanal</div><div class="kv" style="color:#38bdf8">{{ capacidade_semanal }} HH</div></div>
+</div>
+
+<div class="block" style="margin-bottom:8px">
+  <div class="blk-t">Legenda de tipos</div>
+  <div style="padding:8px 0">
+    {% for item in legenda_tipos %}
+    <span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px">
+      <span style="width:20px;height:20px;background:{{ item.cor }};border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff">{{ item.tipo }}</span>
+      <span style="font-size:11px;color:#4a6d8c">{{ item.label }}</span>
+    </span>
+    {% endfor %}
+  </div>
+  <div style="font-size:10px;color:#3a5070">
+    ● círculo = 1 preventiva na semana &nbsp;·&nbsp; ■ quadrado ×N = múltiplas preventivas &nbsp;·&nbsp;
+    Barra inferior = % de utilização da capacidade semanal
+  </div>
+</div>
+
+<div class="block">
+  <div class="blk-t">Grade Semanal — Ativo × 52 Semanas</div>
+  <div class="tbl-wrap" style="max-height:520px;overflow:auto">
+    <table style="border-collapse:collapse;font-size:12px">
+      <thead style="position:sticky;top:0;z-index:4">
+        <tr>
+          <th style="position:sticky;left:0;z-index:3;background:#08111f;min-width:180px">Ativo</th>
+          <th style="background:#08111f;min-width:60px;text-align:center">Próx.<br>Prev.</th>
+          {% for g in meses_grp %}
+          <th colspan="{{ g.semanas|length }}" style="background:{% if g.safra %}#0d1f40{% else %}#08111f{% endif %};color:{% if g.safra %}#B2B5B7{% else %}#3a5070{% endif %};text-align:center;border-left:1px solid #1F3060;font-size:11px;padding:5px 2px">{{ meses_label|get_item:g.mes }}{% if g.safra %} 🌾{% endif %}</th>
+          {% endfor %}
+        </tr>
+        <tr>
+          <th style="position:sticky;left:0;z-index:3;background:#08111f"></th>
+          <th style="background:#08111f"></th>
+          {% for sem in semanas %}
+          <th style="background:{% if sem.safra %}#0d1f40{% else %}#08111f{% endif %};color:{% if sem.safra %}#5a7ab0{% else %}#253545{% endif %};text-align:center;font-size:9px;padding:3px 1px;min-width:32px">{{ forloop.counter|stringformat:"02d" }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for grupo in ativos_por_classe %}
+        <tr>
+          <td colspan="{{ semanas|length|add:2 }}" style="background:#0d1F40;color:#1F3060;font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;position:sticky;left:0">{{ grupo.classe }}</td>
+        </tr>
+        {% for linha in grupo.linhas %}
+        <tr>
+          <td style="position:sticky;left:0;z-index:2;background:#060d1a;font-size:11px;padding:4px 8px;white-space:nowrap;min-width:180px;border-bottom:1px solid #0d1a2e">{{ linha.ativo.nome }}</td>
+          <td style="text-align:center;font-size:10px;padding:2px;border-bottom:1px solid #0d1a2e">{{ linha.proxima }}</td>
+          {% for celula in linha.celulas %}
+          <td style="padding:2px;text-align:center;border-bottom:1px solid #0d1a2e">
+            {% if celula %}
+            <div title="{{ celula.hh }} HH" style="width:24px;height:24px;background:{{ cores_tipo|get_item:celula.tipo }};{% if celula.count > 1 %}border-radius:4px{% else %}border-radius:50%{% endif %};margin:auto;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <span style="font-size:9px;font-weight:900;color:#fff;line-height:1">{{ celula.tipo }}</span>
+              {% if celula.count > 1 %}<span style="font-size:7px;color:rgba(255,255,255,.8)">×{{ celula.count }}</span>{% endif %}
+            </div>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="block">
+  <div class="blk-t">HH Preventiva por Oficina — Agregado Mensal (com herança)</div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="min-width:160px">Oficina</th>{% for m in meses_label %}<th class="mh">{{ m }}</th>{% endfor %}<th class="r">Anual</th></tr></thead>
+    <tbody>
+      <tr><td class="lbl" style="color:#3a5070">Período de safra</td>
+        {% for s in safra_mensal %}{% if s %}<td class="cC"><span class="bdg bo">SAFRA</span></td>{% else %}<td class="mut cC">—</td>{% endif %}{% endfor %}
+      <td></td></tr>
+      {% for oficina in hh_por_oficina_lista %}
+      <tr>
+        <td class="lbl">{{ oficina.nome }}</td>
+        {% for v in oficina.valores %}<td class="ca cC">{{ v }}</td>{% endfor %}
+        <td class="cv cR">{{ oficina.anual }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="tr-c"><td class="lbl" style="color:#B2B5B7;font-weight:700">TOTAL HH PREVENTIVA</td>{% for v in total_hh_mes %}<td class="cv cC">{{ v }}</td>{% endfor %}<td class="cv cR">{{ total_hh_ano }}</td></tr>
+    </tbody>
+  </table></div>
+</div>
+{% endif %}
+{% endblock %}

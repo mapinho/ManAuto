@@ -6,7 +6,7 @@ from .models import EventoPreventiva, PlanoAnual
 class EventoPreventivaInline(admin.TabularInline):
     model = EventoPreventiva
     extra = 0
-    fields = ("data", "ativo", "tipo", "hh", "oficina", "responsavel", "status_execucao")
+    fields = ("data", "ativo", "tipo", "hh", "count", "oficina", "responsavel", "status_execucao")
 
 
 @admin.register(PlanoAnual)
@@ -18,7 +18,16 @@ class PlanoAnualAdmin(admin.ModelAdmin):
 
 @admin.register(EventoPreventiva)
 class EventoPreventivaAdmin(admin.ModelAdmin):
-    list_display = ("ativo", "tipo", "data", "hh", "oficina", "responsavel", "status_execucao")
+    list_display = (
+        "ativo",
+        "tipo",
+        "data",
+        "hh",
+        "count",
+        "oficina",
+        "responsavel",
+        "status_execucao",
+    )
     list_filter = ("organizacao", "tipo", "oficina", "status_execucao")
     date_hierarchy = "data"
     search_fields = ("ativo__nome",)

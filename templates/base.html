@@ -26,7 +26,7 @@
     <a class="tab {% if active_tab == 'frota' %}on{% endif %}" href="{% url 'cadastro:frota' org_slug=org.slug %}">🚛 Frota</a>
     <a class="tab {% if active_tab == 'pessoas' %}on{% endif %}" href="{% url 'cadastro:pessoas' org_slug=org.slug %}">👷 Pessoas</a>
     <a class="tab {% if active_tab == 'checklist' %}on{% endif %}" href="{% url 'cadastro:checklist' org_slug=org.slug %}">✅ Checklist</a>
-    <a class="tab disabled">📅 Cronograma</a>
+    <a class="tab {% if active_tab == 'cronograma' %}on{% endif %}" href="{% url 'plano:cronograma' org_slug=org.slug %}">📅 Cronograma</a>
     <a class="tab disabled">📆 Agenda</a>
     <a class="tab disabled">⚖️ Disponibilidade</a>
   </div>
