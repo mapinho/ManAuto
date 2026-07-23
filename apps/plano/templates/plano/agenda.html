@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load plano_extras %}
+{% block title %}Agenda · {{ org.nome }} · AgroVector{% endblock %}
+{% block content %}
+<div class="stitle">📆 Agenda de Preventivas — Calendário Mensal</div>
+<div class="sdesc">Preventivas programadas em datas reais, com oficina e mecânico responsável atribuídos automaticamente a partir do cronograma e dos checklists. Selecione o trimestre para navegar.</div>
+
+{% if not plano %}
+<div class="ibox">Nenhum plano calculado ainda para esta organização. Vá até <a href="{% url 'plano:cronograma' org_slug=org.slug %}">Cronograma</a> e clique em <b>Recalcular Plano</b>.</div>
+{% elif sem_eventos %}
+<div class="ibox">Nenhuma preventiva programada no horizonte. Verifique premissas/frota.</div>
+{% else %}
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px">
+  {% for t in trimestres %}
+  <a class="btn{% if t.ativo %} btnP{% endif %}" href="?q={{ t.idx }}">T{{ t.idx|add:1 }} · {{ t.label }}</a>
+  {% endfor %}
+</div>
+
+<div class="row4">
+  <div class="kpi"><div class="kl">Trimestre exibido</div><div class="kv" style="font-size:14px">{{ mes_primeiro|date:"M/y" }}–{{ mes_ultimo|date:"M/y" }}</div></div>
+  <div class="kpi"><div class="kl">Preventivas no trimestre</div><div class="kv" style="color:#a78bfa">{{ n_prev }}</div></div>
+  <div class="kpi"><div class="kl">HH preventiva total</div><div class="kv" style="color:#f59e0b">{{ hh_total }}</div></div>
+  <div class="kpi"><div class="kl">Ativos atendidos</div><div class="kv" style="color:#38bdf8">{{ n_ativos }}</div></div>
+  <div class="kpi"><div class="kl">Dia mais carregado</div><div class="kv" style="font-size:14px">{{ dia_top|date:"d/m"|default:"—" }}</div><div class="ks">{{ dia_top_n }} preventiva(s)</div></div>
+</div>
+
+<div class="block" style="margin-bottom:8px">
+  <div class="blk-t">Legenda — tipo de revisão</div>
+  <div style="padding:8px 0">
+    {% for item in legenda_tipos %}
+    <span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px">
+      <span style="width:18px;height:18px;background:{{ item.cor }};border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#fff">{{ item.tipo }}</span>
+      <span style="font-size:11px;color:#4a6d8c">{{ item.label }}</span>
+    </span>
+    {% endfor %}
+  </div>
+  <div style="font-size:10px;color:#3a5070">Dias com fundo destacado = período de safra 🌾 · cada cartão mostra tipo e ativo (o título do cartão, ao passar o mouse, mostra oficina, mecânico e HH).</div>
+</div>
+
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:stretch">
+  {% for grupo in meses_grid %}
+  <div class="block" style="flex:1;min-width:300px">
+    <div class="blk-t">{{ grupo.mes|date:"F/Y" }}</div>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+      <thead><tr>{% for d in dow %}<th style="padding:5px 0;font-size:10px;color:#3a5070;font-weight:600;text-align:center;border-bottom:1px solid #15233d">{{ d }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for linha in grupo.linhas %}
+        <tr>
+          {% for celula in linha %}
+          {% if not celula %}
+          <td style="background:#070d18;border:1px solid #0d1626;height:78px;width:14.28%"></td>
+          {% else %}
+          <td style="background:{% if celula.fds %}#0a1119{% elif celula.safra %}#0a1830{% else %}#08111f{% endif %};border:1px solid #0d1626;height:78px;width:14.28%;vertical-align:top;padding:2px">
+            <div style="font-size:10px;color:{% if celula.safra %}#B2B5B7{% else %}#3a5070{% endif %};text-align:right;padding-right:2px;font-weight:{% if celula.safra %}700{% else %}400{% endif %}">{{ celula.dia|date:"d" }}</div>
+            {% for evento in celula.eventos %}
+            <div title="{{ evento.data|date:'d/m/Y' }} · {{ evento.ativo }} · Rev. {{ evento.tipo }} · {{ evento.oficina }} · {{ evento.mecanico }} · {{ evento.hh }} HH" style="display:flex;align-items:center;gap:3px;background:{{ cores_tipo|get_item:evento.tipo }}1f;border-left:3px solid {{ cores_tipo|get_item:evento.tipo }};border-radius:3px;padding:1px 3px;margin-bottom:2px;overflow:hidden;white-space:nowrap">
+              <span style="font-size:8px;font-weight:900;color:{{ cores_tipo|get_item:evento.tipo }}">{{ evento.tipo }}{% if evento.count > 1 %}×{{ evento.count }}{% endif %}</span>
+              <span style="font-size:8px;color:#9fb0c8;overflow:hidden;text-overflow:ellipsis">{{ evento.curto }}</span>
+            </div>
+            {% endfor %}
+            {% if celula.extra %}<div style="font-size:8px;color:#5a7ab0">+{{ celula.extra }} mais</div>{% endif %}
+          </td>
+          {% endif %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="block">
+  <div class="blk-t">Ordem de Serviço — Agenda Detalhada do Trimestre ({{ eventos_trimestre|length }} preventivas)</div>
+  <div class="tbl-wrap" style="max-height:420px;overflow:auto">
+    <table>
+      <thead><tr>
+        <th>Data</th><th>Ativo</th><th>Classe</th><th class="cC">Rev.</th><th>Oficina</th><th>Mecânico</th><th class="r">HH</th>
+      </tr></thead>
+      <tbody>
+        {% for evento in eventos_trimestre %}
+        <tr>
+          <td class="mut">{{ evento.data|date:"D, d/m" }}</td>
+          <td>{{ evento.ativo }}</td>
+          <td class="mut">{{ evento.classe }}</td>
+          <td class="cC"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:50%;background:{{ cores_tipo|get_item:evento.tipo }};color:#fff;font-size:10px;font-weight:900">{{ evento.tipo }}</span></td>
+          <td class="mut">{{ evento.oficina }}</td>
+          <td>{{ evento.mecanico }}</td>
+          <td class="ca cR">{{ evento.hh }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
